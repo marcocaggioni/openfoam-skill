@@ -1,0 +1,40 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /  O peration     | Version:  v2412                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      transportProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Newtonian validation case: eta = 1.0 Pa.s, rho = 1000 kg/m3,
+// so nu = eta/rho = 1e-03 m2/s.
+// CAREFUL: nu is the KINEMATIC viscosity. (An earlier draft used
+// 1e-06 — the value for water — which is eta = 1e-3 Pa.s and gives a
+// torque 1000x too small. The velocity profile is viscosity-
+// independent for Newtonian Couette flow, so the profile looked
+// right while the torque was wrong — see RUN_REPORT.md.)
+// Pattern: the simpleFoam/pipeCyclic tutorial's transportProperties
+// (which uses nu = 1e-06 because that case is water).
+// Non-Newtonian follow-up (NOT the validation case): replace with e.g.
+//   transportModel  HerschelBulkley;
+//   HerschelBulkleyCoeffs { nu0 0.04; tau0 5; k 0.002; n 0.5; }
+// (coefficients are KINEMATIC: nu0 = eta0/rho, k = K/rho; tau0 is
+// the yield stress in Pa — verify against the model source before
+// trusting a non-Newtonian run)
+// or BirdCarreau (see docs/openfoam-guide.md and the
+// nonNewtonianIcoFoam/offsetCylinder tutorial).
+
+transportModel  Newtonian;
+
+nu              1e-03;
+
+
+// ************************************************************************* //
