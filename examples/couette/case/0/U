@@ -1,0 +1,44 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /  O peration     | Version:  v2412                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volVectorField;
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (0 0 0);
+
+boundaryField
+{
+    innerWall
+    {
+        // Rotating bob. Axis is X (the cylinder axis in this mesh).
+        // __OMEGA__ is replaced by couette_build.py (rad/s).
+        // Pattern: the climbingRod tutorial's rotatingWallVelocity.
+        type            rotatingWallVelocity;
+        axis            (1 0 0);
+        origin          (0 0 0);
+        omega           constant __OMEGA__;
+        value           uniform (0 0 0);
+    }
+
+    outerWall
+    {
+        type            noSlip;
+    }
+
+    #includeEtc "caseDicts/setConstraintTypes"
+}
+
+
+// ************************************************************************* //
