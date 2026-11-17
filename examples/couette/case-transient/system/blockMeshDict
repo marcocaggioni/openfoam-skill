@@ -1,0 +1,125 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /  O peration     | Version:  v2412                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Couette rheometer — wedge sector mesh (axisymmetric).
+// Pattern: the movingCone tutorial's wedge construction (wedge faces are
+// the two faces normal to the thin direction, axis in-plane).
+// Here the cylinder axis is X, radial direction is Y, and the wedge
+// opens in the Y-Z plane with a 4 deg total angle (OpenFOAM requires
+// the wedge angle to be < 5 deg).
+//
+//   x : axial, 0 .. 1 mm, ONE cell. The axial extent is deliberately
+//       one cell: Taylor vortices need axial variation, and a 1 mm
+//       axial slice cannot support them, so the flow stays the ideal
+//       laminar Couette profile and the torque is directly comparable
+//       with the analytic value. The full 3D Taylor-vortex regime is
+//       a documented follow-up (see the skill / RUN_REPORT.md).
+//   y : radial, Ri .. Ro, 40 cells across the 5 mm gap.
+//   z : wedge direction, 1 cell; wedge faces are the planes
+//       z = +/- y*tan(2 deg), meeting on the X axis.
+//
+// Wedge half-angle 2 deg: tan(2 deg) = 0.0349208.
+//   Ri * tan = 0.020 * 0.0349208 = 0.000698416
+//   Ro * tan = 0.025 * 0.0349208 = 0.000873020
+//
+// Torque scaling (see couette_post.py): the sector is a 4 deg slice
+// of the cylinder and a 1 mm slice of its 60 mm length, so
+//   T_full = M_x(sector) * (360/4) * (0.060/0.001)
+//          = M_x(sector) * 5400
+// where M_x is the moment about the X axis from the forces
+// functionObject on the innerWall patch.
+
+scale   1;
+
+vertices
+(
+    (0       0.02  -0.000698416)
+    (0.001   0.02  -0.000698416)
+    (0.001   0.025 -0.000873020)
+    (0       0.025 -0.000873020)
+    (0       0.02   0.000698416)
+    (0.001   0.02   0.000698416)
+    (0.001   0.025  0.000873020)
+    (0       0.025  0.000873020)
+);
+
+blocks
+(
+    hex (0 1 2 3 4 5 6 7) (1 40 1) simpleGrading (1 1 1)
+);
+
+edges
+(
+);
+
+boundary
+(
+    innerWall
+    {
+        type wall;
+        faces
+        (
+            (0 1 5 4)
+        );
+    }
+    outerWall
+    {
+        type wall;
+        faces
+        (
+            (2 3 7 6)
+        );
+    }
+    back
+    {
+        type wedge;
+        faces
+        (
+            (0 3 2 1)
+        );
+    }
+    front
+    {
+        type wedge;
+        faces
+        (
+            (4 5 6 7)
+        );
+    }
+    left
+    {
+        type empty;
+        faces
+        (
+            (0 4 7 3)
+        );
+    }
+    right
+    {
+        type empty;
+        faces
+        (
+            (1 2 6 5)
+        );
+    }
+);
+
+mergePatchPairs
+(
+);
+
+
+// ************************************************************************* //
