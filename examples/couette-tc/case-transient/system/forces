@@ -1,0 +1,29 @@
+// Forces / torque on the rotating bob (inner wall).
+// Pattern: the pimpleFoam/RAS/propeller tutorial's system/forces.
+// rhoInf is the density (incompressible): forces come out in Newtons,
+// moments in N.m. The moment is taken about CofR = the origin, which
+// lies on the cylinder axis (X), so the X component of the moment is
+// the torque about the axis of rotation.
+//
+// This is the SECTOR torque (4 deg wedge slice, 1 mm axial slice).
+// couette_post.py scales it to the full cylinder:
+//   T_full = M_x * (360/4) * (0.060/0.001) = M_x * 5400
+
+forces
+{
+    type            forces;
+    libs            (forces);
+
+    writeControl    timeStep;
+    writeInterval   5;
+    log             true;
+
+    patches         (innerWall);
+    rho             rhoInf;
+    rhoInf          1000;
+
+    CofR            (0 0 0);
+}
+
+
+// ************************************************************************* //
