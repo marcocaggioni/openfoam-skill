@@ -1,0 +1,65 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /  O peration     | Version:  v2412                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// Transient spin-up variant of the steady simpleFoam case, used only
+// for the spin-up video (make_video.py). Same mesh, same BCs, same
+// fluid — only the solver changes. Viscous diffusion time across the
+// gap is gap^2/nu = 0.025 s, so 1 s of spin-up is ~40 diffusion times.
+//
+// Courant number at gamma = 10: U_max = 0.036 m/s, dx = 0.125 mm,
+// dt = 0.001 s -> Co ~ 0.29. At gamma = 100, Co ~ 2.9 — keep dt
+// smaller there, or accept PISO's tolerance (PIMPLE is not
+// Courant-limited the way explicit schemes are, but accuracy is).
+
+application     pimpleFoam;
+
+// Load the custom threeComponent viscosity model (lib/build.sh).
+libs            ("libthreeComponent.so");
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         1.0;
+
+deltaT          0.001;
+
+writeControl    timeStep;
+
+writeInterval   50;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+
+writePrecision  8;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable true;
+
+functions
+{
+    #include "forces"
+}
+
+
+// ************************************************************************* //
