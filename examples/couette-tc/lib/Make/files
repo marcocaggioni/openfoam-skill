@@ -1,0 +1,3 @@
+threeComponent.C
+
+LIB = $(FOAM_USER_LIBBIN)/libthreeComponent
