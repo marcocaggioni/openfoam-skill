@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "openfoam-skill"
+version = "0.1.0"
+description = "Skill teaching an agent to run open-source OpenFOAM finite-volume simulations from an English discussion — starting with a Couette rheometer flow curve."
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "pyyaml",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = []
+
+[tool.uv]
+package = false
+
+# NOTE: OpenFOAM itself has no PyPI package — it is a C++ CFD toolbox,
+# not Python. `uv sync` installs the Python side of this repo only
+# (build, sweep, post-processing, video rendering).
+# OpenFOAM is installed separately via the official Debian repository:
+#   bash scripts/install-openfoam.sh
+# That installs openfoam2412 (and tutorials) from dl.openfoam.com;
+# the Couette case is then run with blockMesh + simpleFoam.
+# See docs/openfoam-guide.md and QUICKSTART.md.
