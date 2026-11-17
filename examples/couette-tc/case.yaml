@@ -1,0 +1,77 @@
+# Couette rheometer — OpenFOAM TC (three-component) example case.
+# Same geometry and sweep as the Newtonian example (examples/couette/),
+# but the fluid is Marco's three-component model fluid:
+#   tau = sigma_y + sigma_y*sqrt(gamma_dot/gamma_dot_c) + eta_bg*gamma_dot
+# with sigma_y = 70 Pa, gamma_dot_c = 100 1/s, eta_bg = 50 cP = 0.05 Pa.s.
+# Everything here is a labelled default: confirm before running.
+# The TC law is NOT a built-in OpenFOAM model: it is implemented as a
+# custom viscosity model in lib/ (threeComponent/threeComponent.C/.H),
+# built with wmake libso and loaded via `libs` in
+# constant/transportProperties. Do NOT substitute Herschel-Bulkley
+# (tau = tau0 + K*gamma_dot^n) or any other built-in model and call it TC.
+
+geometry:
+  R_i: 0.020        # m, rotating inner cylinder (bob)
+  R_o: 0.025        # m, fixed outer cylinder (cup)
+  L: 0.060          # m, wetted length (full-cylinder torque = sector torque * 5400)
+  axis: X           # OpenFOAM wedge convention: cylinder axis along X
+  dimension: 3D wedge sector   # 4 deg wedge, 1 mm axial slice, 1 cell axial.
+                    # Axisymmetric by construction: no Taylor vortices,
+                    # no end effects — the ideal infinite-length Couette cell.
+
+fluid:
+  model: three_component   # custom model, lib/threeComponent — see README.md
+  sigma_y_Pa: 70.0         # yield stress
+  gamma_dot_c_1_s: 100.0   # critical shear rate of the sqrt term
+  eta_bg_Pa_s: 0.05        # background (Newtonian) viscosity, 50 cP
+  rho_kg_m3: 1000.0
+  # REGULARIZATION (required): eta(gamma_dot) = sigma_y/gamma_dot
+  #   + sigma_y/sqrt(gamma_dot*gamma_dot_c) + eta_bg diverges as
+  #   gamma_dot -> 0, so the model caps the (kinematic) viscosity:
+  #   nu = min(nu(gamma_dot), nu_max), nu_max = nu(gamma_dot_reg).
+  #   gamma_dot_reg = 1e-3 1/s gives
+  #   eta_max = 70/1e-3 + 70/sqrt(1e-3*100) + 0.05
+  #           = 70000 + 221.36 + 0.05 = 70221.41 Pa.s
+  #   nu_max = eta_max/rho = 70.22141 m2/s.
+  #   The cap only bites where gamma_dot < 1e-3 1/s, i.e. deep inside
+  #   the unyielded plug (where the true model has gamma_dot = 0 and
+  #   the exact viscosity is infinite); the yielded region, which
+  #   carries the torque, is unaffected. The plug then creeps at
+  #   gamma_dot ~ tau/eta_max ~ 1e-3 1/s instead of sitting exactly
+  #   still — a negligible error on the torque (see RUN_REPORT.md).
+  gamma_dot_reg_1_s: 0.001
+  eta_max_Pa_s: 70221.41
+  nu_max_m2_s: 70.22141
+
+mesh:
+  cells_across_gap: 40      # 5 mm gap -> dx = 0.125 mm (same as Newtonian)
+  wedge_angle_deg: 4.0      # total; OpenFOAM requires < 5 deg
+  axial_extent_m: 0.001     # 1 mm slice, 1 cell (no axial variation)
+  torque_scale: 5400        # (360/4) * (0.060/0.001): sector -> full cylinder
+
+solver:
+  application: simpleFoam   # steady-state, laminar
+  end_time_iterations: 3000 # residualControl (1e-8) usually stops it early;
+                            # the TC plug makes convergence slower than
+                            # Newtonian — see RUN_REPORT.md for what ran
+  residual_tol: 1e-08
+  transient_application: pimpleFoam  # spin-up video only (case-transient/)
+  transient_end_time_s: 1.0
+  transient_delta_t_s: 0.001
+  transient_write_interval_s: 0.05
+
+sweep:
+  shear_rate_1_s: [0.1, 0.3, 1, 3, 10, 30, 100]   # log-spaced, Newtonian
+                            # inner-wall-rate convention:
+                            # Omega = gamma*(Ro^2-Ri^2)/(2*Ro^2).
+                            # NOTE: the label gamma is NOT the TC inner-wall
+                            # rate — the inner-wall rate exceeds it (the
+                            # plug takes up part of the gap). Validation is
+                            # torque vs the analytic TC torque at each
+                            # Omega (couette_post.py), NOT eta_app vs the
+                            # TC law at the label rate.
+  steady_window_fraction: 0.2   # average torque over the last 20% of samples
+
+run:
+  dry_run: true   # default: build the mesh + checkMesh only, no solver run
+  openfoam_root: /usr/lib/openfoam/openfoam2412   # source $root/etc/bashrc
