@@ -1,0 +1,64 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /  O peration     | Version:  v2412                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// Transient PIMPLE (PISO mode: 1 outer corrector). No relaxation —
+// the time stepping carries the solution, and each step is converged
+// by the 2 pressure correctors. pRefCell/pRefValue are required
+// because every boundary is a wall (see the steady fvSolution).
+
+solvers
+{
+    p
+    {
+        solver          GAMG;
+        smoother        GaussSeidel;
+        tolerance       1e-07;
+        relTol          0.01;
+    }
+
+    "(U)"
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e-07;
+        relTol          0;
+    }
+
+    // PIMPLE requires the "Final" variants: used on the last outer
+    // corrector of each time step.
+    pFinal
+    {
+        $p;
+        relTol          0;
+    }
+
+    "(U)Final"
+    {
+        $U;
+        relTol          0;
+    }
+}
+
+PIMPLE
+{
+    nOuterCorrectors 1;
+    nCorrectors      2;
+    nNonOrthogonalCorrectors 0;
+    pRefCell        0;
+    pRefValue       0;
+}
+
+
+// ************************************************************************* //
