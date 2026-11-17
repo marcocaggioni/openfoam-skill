@@ -1,0 +1,50 @@
+# Couette rheometer — OpenFOAM example case.
+# Same geometry and fluid as the M-Star and Palabos examples, so the
+# solvers can be compared point for point.
+# Everything here is a labelled default: confirm before running.
+
+geometry:
+  R_i: 0.020        # m, rotating inner cylinder (bob)
+  R_o: 0.025        # m, fixed outer cylinder (cup)
+  L: 0.060          # m, wetted length (full-cylinder torque = sector torque * 5400)
+  axis: X           # OpenFOAM wedge convention: cylinder axis along X
+  dimension: 3D wedge sector   # 4 deg wedge, 1 mm axial slice, 1 cell axial.
+                    # Axisymmetric by construction: no Taylor vortices,
+                    # no end effects — the ideal infinite-length Couette cell.
+                    # A full 3D annulus is a follow-up (end effects, Taylor
+                    # vortices above Ta_c ~ 41.3 — not reached here).
+
+fluid:
+  model: newtonian   # default, validation case. Alternatives (commented):
+                     # - herschel_bulkley, bird_carreau, casson, power_law
+                     #   are built-in OpenFOAM viscosity models (see
+                     #   docs/openfoam-guide.md) — follow-up, not validation.
+  eta_Pa_s: 1.0
+  rho_kg_m3: 1000.0
+  # herschel_bulkley:   # transportProperties: HerschelBulkleyCoeffs
+  #   yield_stress_Pa: 5.0   # tau0 (Pa)
+  #   K_Pa_s_n: 2.0          # k = K/rho (kinematic consistency)
+  #   n: 0.5
+
+mesh:
+  cells_across_gap: 40      # 5 mm gap -> dx = 0.125 mm
+  wedge_angle_deg: 4.0      # total; OpenFOAM requires < 5 deg
+  axial_extent_m: 0.001     # 1 mm slice, 1 cell (no axial variation)
+  torque_scale: 5400        # (360/4) * (0.060/0.001): sector -> full cylinder
+
+solver:
+  application: simpleFoam   # steady-state, laminar
+  end_time_iterations: 3000 # residualControl (1e-8) usually stops it ~2000
+  residual_tol: 1e-08
+  transient_application: pimpleFoam  # spin-up video only (case-transient/)
+  transient_end_time_s: 1.0
+  transient_delta_t_s: 0.001
+  transient_write_interval_s: 0.05
+
+sweep:
+  shear_rate_1_s: [0.1, 0.3, 1, 3, 10, 30, 100]   # log-spaced
+  steady_window_fraction: 0.2   # average torque over the last 20% of samples
+
+run:
+  dry_run: true   # default: build the mesh + checkMesh only, no solver run
+  openfoam_root: /usr/lib/openfoam/openfoam2412   # source $root/etc/bashrc
