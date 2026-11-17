@@ -1,0 +1,53 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /  O peration     | Version:  v2412                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      transportProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Three-component (TC) fluid — CUSTOM model, NOT a built-in:
+//   tau = sigma_y + sigma_y*sqrt(gamma_dot/gamma_dot_c) + eta_bg*gamma_dot
+//   sigma_y = 70 Pa, gamma_dot_c = 100 1/s, eta_bg = 0.05 Pa.s, rho = 1000.
+// Implemented in lib/threeComponent (threeComponent.C/.H), following the
+// HerschelBulkley transport-model pattern. Build it first:
+//   bash lib/build.sh        (wmake libso -> $FOAM_USER_LIBBIN)
+// and load it via libs in system/controlDict.
+// No built-in OpenFOAM model is TC: Herschel-Bulkley is
+// tau = tau0 + K*gamma_dot^n, Bird-Carreau and Casson are different laws
+// again — none has the sqrt(gamma_dot) term. Do not substitute one.
+//
+// Coefficients below are KINEMATIC (divided by rho = 1000 kg/m3),
+// as for every OpenFOAM viscosity model (see the Newtonian case's
+// transportProperties for the nu trap):
+//   tau0  = sigma_y/rho                      = 70/1000       = 0.07    m2/s2
+//   k     = sigma_y/sqrt(gamma_dot_c)/rho    = 70/10/1000    = 0.007   m2/s
+//   nuBg  = eta_bg/rho                       = 0.05/1000     = 5e-05   m2/s
+//   nuMax = eta_max/rho, eta_max = nu(gamma_dot_reg = 1e-3 1/s)
+//         = (70 + 70/sqrt(1e-3*100) + 0.05*1e-3)/1000 = 70.22141 m2/s
+// The nuMax cap is the regularization: the TC viscosity diverges as
+// gamma_dot -> 0, so it is capped at the value at gamma_dot_reg.
+// The cap only bites inside the unyielded plug (gamma_dot < 1e-3 1/s),
+// where the true model has gamma_dot = 0; the yielded region carrying
+// the torque is unaffected (see case.yaml and RUN_REPORT.md).
+
+transportModel  threeComponent;
+
+threeComponentCoeffs
+{
+    tau0    0.07;
+    k       0.007;
+    nuBg    5e-05;
+    nuMax   70.22141;
+}
+
+
+// ************************************************************************* //
